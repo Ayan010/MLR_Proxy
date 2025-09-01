@@ -1,7 +1,6 @@
 const express = require("express");
 const morgan = require("morgan");
 const dotenv = require("dotenv");
-const fetch = require("node-fetch");
 
 dotenv.config();
 
