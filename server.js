@@ -1,6 +1,8 @@
 const express = require("express");
 const morgan = require("morgan");
 const dotenv = require("dotenv");
+const { readOCRFromImage } = require('./read-file'); // Import the OCR function
+// const fetch = require("node-fetch");
 
 dotenv.config();
 
@@ -19,6 +21,31 @@ const EMBEDDING_DEPLOYMENT = process.env.EMBEDDING_DEPLOYMENT;
 
 app.get("/welcome", (req, res) => {
   res.json("Welcome to Azure OpenAI Proxy Server");
+});
+
+
+
+app.get("/v1/ocr", async (req, res) => {
+  try {
+    const imagePath = req.query.imagePath; // Use query parameters for GET
+    if (!imagePath) {
+      return res.status(400).json({ error: "Image path is required" });
+    }
+
+    console.log("OCR request received for image:", imagePath);
+
+    const text = await new Promise((resolve, reject) => {
+      readOCRFromImage(imagePath, (err, extractedText) => {
+        if (err) return reject(err);
+        resolve(extractedText);
+      });
+    });
+
+    res.json({ text });
+  } catch (err) {
+    console.error("Error during OCR processing:", err);
+    res.status(500).json({ error: "OCR processing failed" });
+  }
 });
 
 app.use((req, res, next) => {
@@ -99,38 +126,6 @@ app.post("/v1/embeddings", async (req, res) => {
     res.status(500).json({ error: "Proxy failed" });
   }
 });
-
-
-
-// async function fetchEmbeddingDeployments(endpoint, apiKey) {
-//   try {
-//     const res = await fetch(`https://${AZURE_RESOURCE}.openai.azure.com/openai/deployments?api-version=${AZURE_API_VERSION}`, {
-//       method: "GET",
-//       headers: { "api-key": AZURE_API_KEY }
-//     });
-
-//     if (!res.ok) {
-//       throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-//     }
-
-//     const data = await res.json();
-
-//     // Filter only embedding deployments
-//     const embeddingDeployments = data.data.filter(d => d.type === "embedding");
-
-//     return embeddingDeployments;
-//   } catch (err) {
-//     console.error("Error fetching embedding deployments:", err);
-//     return [];
-//   }
-// }
-
-// fetchEmbeddingDeployments()
-//   .then(deployments => {
-//     console.log("Embedding Deployments:");
-//     deployments.forEach(d => console.log(`- ${d.id} (model: ${d.model})`));
-//   });
-
 
 
 
